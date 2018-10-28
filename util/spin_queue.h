@@ -29,7 +29,22 @@ class SpinQueue : public Queue<ValueType> {
 
   virtual std::unique_ptr<Queue<ValueType>> BatchPop(
       size_t max = std::numeric_limits<size_t>::max()) override {
+    UnsafeQueue<ValueType>* result = NewUnsafeQueue();
 
+    {
+      std::lock_guard<SpinLock> guard(spin_lock_);
+      if (queue_.size() <= max) {
+        using std::swap;
+        swap(result->queue_, queue_);
+      } else {
+        for (size_t i = 0; i < max && !queue_.is_empty(); i++) {
+          result->queue_.push_back(std::move(queue_.front()));
+          queue_.pop();
+        }
+      }
+    }
+
+    return std::unique_ptr<Queue<ValueType>>(result);
   }
 
  private:
