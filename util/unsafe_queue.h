@@ -1,7 +1,17 @@
 #ifndef MYUTIL_UNSAFE_QUEUE_H_
 #define MYUTIL_UNSAFE_QUEUE_H_
 
+#include <deque>
+#include <utility>
+#include <limits>
+
+#include "queue.h"
+#include "make_unique.h"
+
 namespace myutil {
+
+template<typename ValueType>
+class SpinQueue;
 
 template <typename ValueType>
 class UnsafeQueue : public Queue<ValueType> {
@@ -21,25 +31,33 @@ class UnsafeQueue : public Queue<ValueType> {
 
   virtual ValueType Pop() override {
     ValueType value = std::move(queue_.front());
-    queue_.pop();
+    queue_.pop_front();
     return std::move(value);
   }
 
   virtual std::unique_ptr<Queue<ValueType>> BatchPop(
       size_t max = std::numeric_limits<size_t>::max()) override {
-    UnsafeQueue<ValueType>* result = NewUnsafeQueue();
+    auto result = make_unique<UnsafeQueue<ValueType>>();
 
     if (queue_.size() <= max) {
       using std::swap;
       swap(result->queue_, queue_);
     } else {
-      for (size_t i = 0; i < max && !queue_.is_empty(); i++) {
+      for (size_t i = 0; i < max && !queue_.empty(); i++) {
         result->queue_.push_back(std::move(queue_.front()));
-        queue_.pop();
+        queue_.pop_front();
       }
     }
 
-    return std::unqiue_ptr<Queue<ValueType>>(result);
+    return std::move(result);
+  }
+
+  virtual size_t Size() override {
+    return queue_.size();
+  }
+
+  virtual bool Empty() override {
+    return queue_.empty();
   }
 
  private:

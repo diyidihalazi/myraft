@@ -1,6 +1,15 @@
 #ifndef MYUTIL_SPIN_QUEUE_H_
 #define MYUTIL_SPIN_QUEUE_H_
 
+#include <deque>
+#include <mutex>
+#include <utility>
+#include <limits>
+
+#include "queue.h"
+#include "spin_lock.h"
+#include "unsafe_queue.h"
+
 namespace myutil {
 
 template <typename ValueType>
@@ -23,13 +32,13 @@ class SpinQueue : public Queue<ValueType> {
   virtual ValueType Pop() override {
     std::lock_guard<SpinLock> guard(spin_lock_);
     ValueType value = std::move(queue_.front());
-    queue_.pop();
+    queue_.pop_front();
     return std::move(value);
   }
 
   virtual std::unique_ptr<Queue<ValueType>> BatchPop(
       size_t max = std::numeric_limits<size_t>::max()) override {
-    UnsafeQueue<ValueType>* result = NewUnsafeQueue();
+    auto result = make_unique<UnsafeQueue<ValueType>>();
 
     {
       std::lock_guard<SpinLock> guard(spin_lock_);
@@ -37,14 +46,24 @@ class SpinQueue : public Queue<ValueType> {
         using std::swap;
         swap(result->queue_, queue_);
       } else {
-        for (size_t i = 0; i < max && !queue_.is_empty(); i++) {
+        for (size_t i = 0; i < max && !queue_.empty(); i++) {
           result->queue_.push_back(std::move(queue_.front()));
-          queue_.pop();
+          queue_.pop_front();
         }
       }
     }
 
-    return std::unique_ptr<Queue<ValueType>>(result);
+    return std::move(result);
+  }
+
+  virtual size_t Size() override {
+    std::lock_guard<SpinLock> guard(spin_lock_);
+    return queue_.size();
+  }
+
+  virtual bool Empty() override {
+    std::lock_guard<SpinLock> guard(spin_lock_);
+    return queue_.empty();
   }
 
  private:
