@@ -3,7 +3,7 @@
 namespace myraft {
 
 bool Unstable::MaybeFirstIndex(uint64_t* result) const {
-  if nullptr != snapshot_.get() {
+  if (nullptr != snapshot_.get()) {
     *result = snapshot_->metadata().index() + 1;
     return true;
   }
@@ -12,12 +12,12 @@ bool Unstable::MaybeFirstIndex(uint64_t* result) const {
 }
 
 bool Unstable::MaybeLastIndex(uint64_t* result) const {
-  if 0 != (last_ - first_ + 1) {
+  if (0 != (last_ - first_ + 1)) {
     *result = last_;
     return true;
   }
 
-  if nullptr != snapshot_.get() {
+  if (nullptr != snapshot_.get()) {
     *result = snapshot_->metadata().index();
     return true;
   }
@@ -25,13 +25,13 @@ bool Unstable::MaybeLastIndex(uint64_t* result) const {
   return false;
 }
 
-bool Unstable::MaybeTerm(uint64_t index, uint64_t* result) const {
-  if nullptr != snapshot_.get() && snapshot_->metadata().index() == index {
+bool Unstable::MaybeTerm(uint64_t index, uint64_t* result) {
+  if (nullptr != snapshot_.get() && snapshot_->metadata().index() == index) {
     *result = snapshot_->metadata().term();
     return true;
   }
 
-  if index < first_ || index > last_ {
+  if (index < first_ || index > last_) {
     return false;
   }
 
@@ -49,15 +49,15 @@ bool Unstable::Snapshot(raftpb::Snapshot* snapshot) const {
   return false;
 }
 
-void Unstable::StableTo(uint64_t index, int64_t term) {
+void Unstable::StableTo(uint64_t index, uint64_t term) {
   uint64_t gterm = 0;
   if (!MaybeTerm(index, &gterm)) {
     return ;
   }
 
-  if (gterm == term && i >= first_) {
+  if (gterm == term && index >= first_) {
     for (uint64_t base = BaseIndex(first_), limit = BaseIndex(index + 1);
-         offset < limit; offset += kEntryBufferSize) {
+         base < limit; base += kEntryBufferSize) {
       entries_.erase(base);
     }
     first_ = index + 1;
@@ -92,20 +92,20 @@ void Unstable::TruncateAndAppend(const EntrySlice& entries) {
   }
 }
 
-void Unstable::Slice(uint64_t low, uint64_t high, Entries* entries) const {
+void Unstable::Slice(uint64_t low, uint64_t high, Entries* entries) {
   MustCheckOutofBounds(low, high);
   for (uint64_t i = low; i < high; ) {
     uint64_t base = BaseIndex(i);
     std::unique_ptr<raftpb::Entry[]>& buffer = entries_[base];
 
-    for (int j = i - base; j < kEntryBufferSize && i < high; j++, i++) {
+    for (uint64_t j = i - base; j < kEntryBufferSize && i < high; j++, i++) {
       *(entries->Add()) = buffer[j];
     }
   }
 }
 
 void Unstable::Append(const EntrySlice& entries) {
-  for (int i = 0, size = entries.Size(); i < size; ) {
+  for (uint64_t i = 0, size = entries.Size(); i < size; ) {
     uint64_t base = BaseIndex(entries[i].index());
 
     std::unique_ptr<raftpb::Entry[]>& buffer = entries_[base];
@@ -113,7 +113,7 @@ void Unstable::Append(const EntrySlice& entries) {
       buffer.reset(new raftpb::Entry[kEntryBufferSize]);
     }
 
-    for (int j = entries[i].index() - base;
+    for (uint64_t j = entries[i].index() - base;
          j < kEntryBufferSize && i < size; j++, i++) {
       buffer[j] = entries[i];
     }
@@ -127,7 +127,7 @@ void Unstable::MustCheckOutofBounds(uint64_t low, uint64_t high) const {
     //Panic
   }
 
-  if low < first_ || high > last_ + 1 {
+  if (low < first_ || high > last_ + 1) {
     //Panic
   }
 }

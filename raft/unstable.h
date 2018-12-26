@@ -1,6 +1,13 @@
 #ifndef MYRAFT_UNSTABLE_H_
 #define MYRAFT_UNSTABLE_H_
 
+#include <stdint.h>
+
+#include <memory>
+
+#include "entry_slice.h"
+#include "raftpb/raft.pb.h"
+
 namespace myraft {
 
 class Unstable {
@@ -19,16 +26,16 @@ class Unstable {
 
   bool MaybeFirstIndex(uint64_t* result) const;
   bool MaybeLastIndex(uint64_t* result) const;
-  bool MaybeTerm(uint64_t index, uint64_t* result) const;
+  bool MaybeTerm(uint64_t index, uint64_t* result);
   bool Snapshot(raftpb::Snapshot* snapshot) const;
 
-  void StableTo(uint64_t index, int64_t term);
+  void StableTo(uint64_t index, uint64_t term);
   void StableSnapTo(uint64_t index);
 
   void Restore(const raftpb::Snapshot& snapshot);
   void TruncateAndAppend(const EntrySlice& entries);
 
-  void Slice(uint64_t low, uint64_t high, Entries* entries) const;
+  void Slice(uint64_t low, uint64_t high, Entries* entries);
 
   uint64_t First() const { return first_; }
   uint64_t Last()  const { return last_; }

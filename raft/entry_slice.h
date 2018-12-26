@@ -1,6 +1,8 @@
 #ifndef MYRAFT_ENTRY_SLICE_H_
 #define MYRAFT_ENTRY_SLICE_H_
 
+#include "raftpb/raft.pb.h"
+
 namespace myraft {
 
 class EntrySlice {
@@ -20,7 +22,7 @@ class EntrySlice {
   EntrySlice(const EntrySlice&) = default;
   EntrySlice& operator=(const EntrySlice&) = default;
   EntrySlice(EntrySlice&&) = default;
-  EntrySlice& opetator=(EntrySlice&&) = default;
+  EntrySlice& operator=(EntrySlice&&) = default;
 
   const raftpb::Entry& operator[](int index) const {
     return entries_[first_ + index];

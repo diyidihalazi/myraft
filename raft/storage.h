@@ -1,6 +1,12 @@
 #ifndef MYRAFT_STORAGE_H_
 #define MYRAFT_STORAGE_H_
 
+#include <stdint.h>
+
+#include <string>
+
+#include "raftpb/raft.pb.h"
+
 namespace myraft {
 
 class Storage {
@@ -23,7 +29,7 @@ class Storage {
       "requested index is older than the existing snapshot",
       "requested entry at index is unavailable",
       "snapshot is temporarily unavailable",
-    }
+    };
 
     return kErrorStrings[error];
   }
@@ -38,7 +44,8 @@ class Storage {
   Storage& operator=(Storage&&)      = default;
 
   virtual Error InitialState(raftpb::HardState* hard_state, raftpb::ConfState* conf_state) const;
-  virtual Error GetEntries(uint64_t low, uint64_t high, uint64_t max_size, Entries* entries) const;
+  virtual Error GetEntries(uint64_t low, uint64_t high, Entries* entries) const;
+  //append 语义
   virtual Error Term(uint64_t index, uint64_t* result) const;
   virtual Error LastIndex(uint64_t* result) const;
   virtual Error FirstIndex(uint64_t* result) const;
