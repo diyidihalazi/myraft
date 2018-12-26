@@ -89,7 +89,7 @@ bool Progress::MaybeDecrease(uint64_t rejected, uint64_t last) {
   return true;
 }
 
-bool Progress::IsPaused() {
+bool Progress::IsPaused() const {
   switch (state_) {
     case ProgressStateProbe:
       return paused_;
@@ -102,7 +102,7 @@ bool Progress::IsPaused() {
   }
 }
 
-std::string Progress::String() {
+std::string Progress::String() const {
   char buff[1024] = {0};
 
   std::string state;
@@ -189,6 +189,17 @@ void Progress::ProgressUnreachable(const std::unique_ptr<const raftpb::Message>&
 
   if (ProgressStateReplicate == state_) {
     BecomeProbe();
+  }
+}
+
+void Progress::Inflights::Push(uint64_t inflight) {
+  if (Full()) { /*Panicf*/ }
+  queue_.push_back(inflight);
+}
+
+void Progress::Inflights::PopTo(uint64_t to) {
+  while (!queue_.empty() && to >= queue_.front()) {
+    queue_.pop_front();
   }
 }
 
