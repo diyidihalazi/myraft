@@ -29,6 +29,11 @@ class UnsafeQueue : public Queue<ValueType> {
     return 1 == queue_.size();
   }
 
+  virtual bool Push(ValueType&& value) override {
+    queue_.push_back(std::move(value));
+    return 1 == queue_.size();
+  }
+
   virtual ValueType Pop() override {
     ValueType value = std::move(queue_.front());
     queue_.pop_front();

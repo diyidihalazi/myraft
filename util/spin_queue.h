@@ -29,6 +29,12 @@ class SpinQueue : public Queue<ValueType> {
     return 1 == queue_.size();
   }
 
+  virtual bool Push(ValueType&& value) override {
+    std::lock_guard<SpinLock> guard(spin_lock_);
+    queue_.push_back(std::move(value));
+    return 1 == queue_.size();
+  }
+
   virtual ValueType Pop() override {
     std::lock_guard<SpinLock> guard(spin_lock_);
     ValueType value = std::move(queue_.front());
